@@ -16,8 +16,8 @@ use std::time::Instant;
 
 use reqwest::blocking::Client;
 
-mod parser;
-use parser::{Parser, ParseError};
+use parser_sample::Parser;
+use parser_sample::parser::ParseError;
 
 fn main() {
     // We're just using a simple library here to access the HTTP request in a blocking way
@@ -76,7 +76,7 @@ fn main() {
 
     let duration = start.elapsed();
 
-    // Parsing a single entry took 91.8µs
+    // Parsing a single entry took 91.8µs (that's in debug though)
     println!("Parsing a single entry took {:?}", duration);
 
     // First  element symbol: ResultEntry { symbol: "BNB-250511-665-P", priceChange: -10.5, 
@@ -87,7 +87,7 @@ fn main() {
     println!("First element symbol: {:?}", single_entry);
 
     let start = Instant::now();
-    // Parse another 100 and average their runtime:
+    // Parse another 100 entries:
     for _ in 0..100 {
         match parser.parse_single() {
             Err(error) => {
@@ -99,6 +99,7 @@ fn main() {
     }
     let duration = start.elapsed();
 
+    // Parsing 100 further entries took 2.1233ms (that's in debug though)
     println!("Parsing 100 further entries took {:?}", duration);
 }
 

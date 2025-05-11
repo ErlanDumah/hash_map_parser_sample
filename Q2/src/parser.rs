@@ -77,6 +77,9 @@ impl Display for ParseError {
             &ParseError::UnrecognisedToken => {
                 write!(f, "An unrecognised token was encountered.")
             },
+            &ParseError::UnrecognisedKeyValuePair => {
+                write!(f, "An unrecognised key value pair was encountered.")
+            },
             &ParseError::ParseFloatError(error) => {
                 write!(f, "There was a parse float error: {}", error)
             },
@@ -114,13 +117,6 @@ enum State {
     // [{"key": "value"}]
     //   ^    ^^       ^
     Key(String),
-
-    // [{"key": "value"}]
-    //        ^        ^
-    ValueString{key: String, value: String},
-    // [{"key": 36275}]
-    //               ^
-    ValueNumber{key: String, value: String},
 }
 
 // Of course, this is way more complicated than using Serde for example
