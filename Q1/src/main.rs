@@ -12,6 +12,8 @@
 //  we fix the links of the updated entry and the previous last entry
 // This way we an support O(1) fetch of first and last elements
 
+use core::hash;
+
 // We define a struct Entry that will serve as the return type for first, last gets:
 struct Entry<K, V> {
     key: K,
@@ -36,6 +38,7 @@ struct ProbeHashMapEntry<K, V> {
 
 /// Since we are using a fixed size hashtable, it can become full
 /// In this case we want to return an error on trying to insert entries
+#[derive(Debug)]
 enum InsertionError {
     ContainerFull,
 }
@@ -48,7 +51,7 @@ struct ProbeHashMap<K, V, const Size: usize> {
     random_state: std::hash::RandomState, // Use the standard hasher
     first_index: Option<usize>, // Key to least recent key-value pair inserted / updated
     last_index: Option<usize>, // Key to most recent key-value pair inserted / updated
-    entry_array: [ProbeHashMapEntry<K, V>; Size],
+    entry_array: Vec<ProbeHashMapEntry<K, V>>,
 }
 
 // Declaring a trait for convenience; you could simply impl ProbeHashMap as well
@@ -90,11 +93,14 @@ impl<K, V> ProbeHashMapEntry<K, V> {
 
 impl<K, V, const Size: usize> ProbeHashMap<K, V, Size> {
     pub fn new() -> Self {
+        // Allocate vector with capacity in mind to avoid resizing
+        let mut entry_array = Vec::with_capacity(Size);
+        entry_array.resize_with(Size, || { return ProbeHashMapEntry::new(); });
         ProbeHashMap {
             random_state: std::hash::RandomState::new(),
             first_index: None,
             last_index: None,
-            entry_array: std::array::from_fn(|_| ProbeHashMapEntry::new()),
+            entry_array,
         }
     }
 }
@@ -352,7 +358,34 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
 
 
 fn main() {
-    
+    let file_path = "./assets/98-0.txt";
+
+    // We are of course reading the whole file here as opposed to using a stream
+    // I'm assuming here optimizing the reading of the file is not the point of the exercise
+    println!("Hello");
+    let file = match std::fs::read_to_string(file_path) {
+        Ok(file) => file,
+        Err(error) => {
+            println!("Reading the asset file failed: {}", error);
+            return;
+        }
+    };
+
+    let mut hash_map: ProbeHashMap<String, u32, 100000> = ProbeHashMap::new();
+
+    let mut count = 0;
+    file.split_whitespace().enumerate().for_each(|(index, word)| {
+        match hash_map.insert(String::from(word), index as u32) {
+            Ok(()) => {
+                count+=1;
+            },
+            Err(insertion_error) => {
+                println!("Error at insertion of word {} at index {}: {:?}", word, index, insertion_error);
+            }
+        }
+    });
+
+    println!("Finished insertion of {} word entries.", count);
 }
 
 

@@ -12,7 +12,7 @@ I implemented the code with a "fixed size" storage in mind as I believed that to
 
 ### Runtime analysis
 
-Function `get`, `insert`, `remove` can be argued by amortisation to be O(1). For each one of them the worst case is a scan of the entire fixed size storage array. However this case happens only as the hashtable fills up.
+Functions `get`, `insert`, `remove` can be argued by amortisation to be O(1). For each one of them the worst case is a scan of the entire fixed size storage array. However this case happens only as the hashtable fills up. It can be assumed given reasonable size that the 
 
 Functions `get_first`, `get_last` are both a lookup of an array entry per index, thereby O(1).
 
