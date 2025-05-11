@@ -12,9 +12,10 @@
 //  and resuming at a later time.
 
 
-use std::iter::Peekable;
+use std::{iter::Peekable, time::Instant};
 
 use reqwest::blocking::Client;
+
 
 
 ///
@@ -439,6 +440,8 @@ fn main() {
     // The data is, as expected huge
     let mut parser = Parser::new(&body_text);
 
+    let start = Instant::now();
+
     // Test parsing a single entry.
     let single_entry = match parser.parse_single() {
         None => {
@@ -447,6 +450,11 @@ fn main() {
         },
         Some(entry) => entry,
     };
+
+    let duration = start.elapsed();
+
+    // Parsing a single entry took 91.8µs
+    println!("Parsing a single entry took {:?}", duration);
 
     // First  element symbol: ResultEntry { symbol: "BNB-250511-665-P", priceChange: -10.5, 
     // priceChangePercent: -0.84, lastPrice: 2.0, lastQty: 0.0, open: 12.5, high: 12.5, low: 2.0,
