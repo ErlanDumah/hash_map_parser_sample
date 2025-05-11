@@ -421,6 +421,17 @@ fn main() {
         }
     };
 
+    // Save the result to assets for easy access for testing, benchmarking
+    //let file_path = "./assets/body_text.json";
+    //match std::fs::write(file_path, body_text) {
+    //    Ok(()) => {},
+    //    Err(error) => {
+    //        println!("Writing the response into {} failed: {}", file_path, error);
+    //    }
+    //}
+    //println!("Successfully wrote the response into {}", file_path);
+    //return;
+
     // Initially trying to just output the whole response as text here crashed my CLI.
     // Message byte count: 491542
     println!("Message byte count: {}", body_text.len());
@@ -445,4 +456,87 @@ fn main() {
     println!("First element symbol: {:?}", single_entry);
 }
 
+
+mod tests {
+    use crate::Parser;
+
+    // A nifty little macro that allows us to write one-line asserts
+    macro_rules! matches(
+        ($e:expr, $p:pat) => (
+            match $e {
+                $p => true,
+                _ => false
+            }
+        )
+    );
+
+    #[test]
+    fn parse_single_works() {
+        let file_path = "./assets/body_text.json";
+        let file = match std::fs::read_to_string(file_path) {
+            Ok(file) => file,
+            Err(error) => {
+                assert!(false, "Reading the asset file failed: {}", error);
+                return;
+            }
+        };
+
+        let mut parser = Parser::new(&file);
+
+        // The first entry happened to be uninteresting, lots of 0s and 0.0s
+        let _ = match parser.parse_single() {
+            None => assert!(false, "parse_single() produced None"),
+            Some(_) => {},
+        };
+
+        let second_entry = match parser.parse_single() {
+            None => { 
+                assert!(false, "parse_single() produced None");
+                return;
+            }
+            Some(entry) => entry,
+        };
+
+        assert!(matches!(second_entry.symbol.as_str(), "ETH-250516-2550-C"));
+        assert!(matches!(second_entry.priceChange, -1.6));
+        assert!(matches!(second_entry.priceChangePercent, -0.0201));
+        assert!(matches!(second_entry.lastPrice, 78.0));
+        assert!(matches!(second_entry.lastQty, 0.2));
+        assert!(matches!(second_entry.open, 79.6));
+        assert!(matches!(second_entry.high, 115.8)); 
+        assert!(matches!(second_entry.low, 77.2)); 
+        assert!(matches!(second_entry.volume, 72.26)); 
+        assert!(matches!(second_entry.amount, 6090.82)); 
+        assert!(matches!(second_entry.bidPrice, 84.8)); 
+        assert!(matches!(second_entry.askPrice, 85.8)); 
+        assert!(matches!(second_entry.openTime, 1746898120943)); 
+        assert!(matches!(second_entry.closeTime, 1746954696155)); 
+        assert!(matches!(second_entry.firstTradeId, 1));  
+        assert!(matches!(second_entry.tradeCount, 24));  
+        assert!(matches!(second_entry.strikePrice, 2550.0)); 
+        assert!(matches!(second_entry.exercisePrice, 2511.22651163));
+    }
+    
+    #[test]
+    fn parsing_entire_data_works() {
+        let file_path = "./assets/body_text.json";
+        let file = match std::fs::read_to_string(file_path) {
+            Ok(file) => file,
+            Err(error) => {
+                assert!(false, "Reading the asset file failed: {}", error);
+                return;
+            }
+        };
+
+        let mut parser = Parser::new(&file);
+
+        let mut count = 0;
+        // No error is being thrown during parsing of the entire file
+        while let Some(_) = parser.parse_single() {
+            count += 1;
+        }
+
+        assert_eq!(count, 1436);
+    }
+}
 
