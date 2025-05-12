@@ -55,16 +55,17 @@ impl ResultEntry {
 
 // An error enum that represents all errors that can occur during lexing
 enum ParseTokenError {
-    EndOfData,
-    UnrecognisedToken,
+    EndOfData, // There is no data left to be parsed
+    UnrecognisedToken(char), // There was an unexpected token encountered
 }
 
 // An error enum that represents all errors that can occur during parsing
 pub enum ParseError {
     EndOfData, // There is no data left to be parsed
-    UnrecognisedToken, // There was an unexpected token encountered
-    UnrecognisedKeyValuePair,
-    ParseFloatError(ParseFloatError), // An expected float point value could not be parsed as such
+    UnrecognisedToken(char), // There was an unexpected token encountered
+    UnrecognisedKeyStringValuePair{ key: String, value: String }, // An unrecognised key with a string value was found
+    UnrecognisedKeyNumberValuePair{ key: String, value: usize }, // An unrecognised key with a number value was found
+    ParseFloatError{ key: String, value: String, error: ParseFloatError}, // An expected float point value could not be parsed as such
 }
 
 // Pretty printing for our ParseError
@@ -74,14 +75,17 @@ impl Display for ParseError {
             &ParseError::EndOfData => {
                 write!(f, "The end of data was reached.")
             },
-            &ParseError::UnrecognisedToken => {
-                write!(f, "An unrecognised token was encountered.")
+            &ParseError::UnrecognisedToken(ref string) => {
+                write!(f, "An unrecognised token {} was encountered.", string)
             },
-            &ParseError::UnrecognisedKeyValuePair => {
-                write!(f, "An unrecognised key value pair was encountered.")
+            &ParseError::UnrecognisedKeyStringValuePair{ref key, ref value} => {
+                write!(f, "Unexpected key {} found with string value {}", key, value)
+            }
+            &ParseError::UnrecognisedKeyNumberValuePair{ ref key, ref value } => {
+                write!(f, "Unexpected key {} found with number value {}", key, value)
             },
-            &ParseError::ParseFloatError(error) => {
-                write!(f, "There was a parse float error: {}", error)
+            &ParseError::ParseFloatError{ ref key, ref value, ref error} => {
+                write!(f, "Key entry {} with string value \"{}\" could not be parsed as float: {}", key, value, error)
             },
         }
     }
@@ -192,12 +196,131 @@ impl<'data> Parser<'data> {
                     }
                 }
                 _ => {
-                    return Err(ParseTokenError::UnrecognisedToken);
+                    return Err(ParseTokenError::UnrecognisedToken(character));
                 },
             }
         }
 
         return Err(ParseTokenError::EndOfData);
+    }
+
+    /// Set data of given entry according to JSON key string value pair
+    /// @return Ok(()) if given key value pair is a valid entry, otherwise an error specifying the issue
+    fn set_data_from_string(entry: &mut ResultEntry, key: &String, value: String) -> Result<(), ParseError>{
+        match key.as_str() {
+            "symbol" => {
+                entry.symbol = value;
+            },
+            "priceChange" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.priceChange = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "priceChangePercent" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.priceChangePercent = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "lastPrice" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.lastPrice = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "lastQty" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.lastQty = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "open" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.open = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "high" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.high = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "low" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.low = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "volume" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.volume = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "amount" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.amount = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "bidPrice" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.bidPrice = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "askPrice" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.askPrice = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "strikePrice" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.strikePrice = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+            "exercisePrice" => {
+                match value.parse::<f64>() {
+                    Ok(value_f64) => entry.exercisePrice = value_f64,
+                    Err(error) => return Err(ParseError::ParseFloatError{ key: key.clone(), value, error, }),
+                }
+            },
+
+            _ => {
+                return Err(ParseError::UnrecognisedKeyStringValuePair { key: key.clone(), value, });
+            }
+        }
+
+        return Ok(());
+    }
+
+    /// Set data of given entry according to JSON key number value pair
+    /// @return Ok(()) if given key value pair is a valid entry, otherwise an error specifying the issue
+    fn set_data_from_number(entry: &mut ResultEntry, key: &String, value: usize) -> Result<(), ParseError> {
+        match key.as_str() {
+            "firstTradeId" => {
+                entry.firstTradeId = value;
+            },
+            "tradeCount" => {
+                entry.tradeCount = value;
+            },
+            "openTime" => {
+                entry.openTime = value;
+            },
+            "closeTime" => {
+                entry.closeTime = value;
+            },
+
+            _ => {
+                return Err(ParseError::UnrecognisedKeyNumberValuePair { key: key.clone(), value, });
+            }
+        }
+
+        return Ok(());
     }
 
     /// Parses until the first ResultEntry was found
@@ -206,7 +329,7 @@ impl<'data> Parser<'data> {
         loop {
             let token = match self.consume_token() {
                 Err(ParseTokenError::EndOfData) => break,
-                Err(ParseTokenError::UnrecognisedToken) => return Err(ParseError::UnrecognisedToken),
+                Err(ParseTokenError::UnrecognisedToken(character)) => return Err(ParseError::UnrecognisedToken(character)),
                 Ok(token) => token,
             };
         
@@ -233,114 +356,15 @@ impl<'data> Parser<'data> {
                 },
 
                 (&State::Key(ref key), Token::StringValue(value)) => {
-                    match key.as_str() {
-                        "symbol" => {
-                            self.current_entry.symbol = value;
-                        },
-                        "priceChange" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.priceChange = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "priceChangePercent" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.priceChangePercent = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "lastPrice" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.lastPrice = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "lastQty" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.lastQty = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "open" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.open = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "high" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.high = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "low" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.low = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "volume" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.volume = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "amount" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.amount = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "bidPrice" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.bidPrice = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "askPrice" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.askPrice = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "strikePrice" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.strikePrice = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-                        "exercisePrice" => {
-                            match value.parse::<f64>() {
-                                Ok(value_f64) => self.current_entry.exercisePrice = value_f64,
-                                Err(error) => return Err(ParseError::ParseFloatError(error)),
-                            }
-                        },
-
-                        _ => {
-                            println!("Unexpected key found for string value {}: {}", key, value);
-                        }
+                    if let Err(error) = Self::set_data_from_string(&mut self.current_entry, key, value) {
+                        return Err(error);
                     }
                     self.state = State::Object;
                 },
 
                 (&State::Key(ref key), Token::NumberValue(value)) => {
-                    match key.as_str() {
-                        "firstTradeId" => {
-                            self.current_entry.firstTradeId = value;
-                        },
-                        "tradeCount" => {
-                            self.current_entry.tradeCount = value;
-                        },
-                        "openTime" => {
-                            self.current_entry.openTime = value;
-                        },
-                        "closeTime" => {
-                            self.current_entry.closeTime = value;
-                        },
-
-                        _ => {
-                            print!("Unexpected key found for number value {}: {}", key, value);
-                        }
+                    if let Err(error) = Self::set_data_from_number(&mut self.current_entry, key, value) {
+                        return Err(error);
                     }
                     self.state = State::Object;
                 },
