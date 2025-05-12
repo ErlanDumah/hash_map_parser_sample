@@ -52,30 +52,6 @@ pub struct ProbeHashMap<K, V, const Size: usize> {
     entry_array: Vec<ProbeHashMapEntry<K, V>>,
 }
 
-// Declaring a trait for convenience; you could simply impl ProbeHashMap as well
-// I personally like doing it this way because it keeps the relevant signatures easy to read
-// Notice the where K: Borrow<Q>; this is a nifty little trait requirement that allows us to
-//  use &str types for our fetch functions rather than only &String types.
-
-trait ProbeHashMapTrait<K, V> {
-    /// Updates a currently existing value with key equal to given key, or
-    /// alternatively creates a new entry if not yet existing.
-    /// @return Ok(()) if insertion or update was successful, Err(InsertionError) otherwise
-    fn insert(&mut self, key: K, value: V) -> Result<(), InsertionError>;
-    /// Removes an entry with key equal to given key
-    fn remove<Q>(&mut self, key: &Q)
-    where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized;
-    /// Returns the value of the entry with key equal to given key.
-    /// @return None if no such entry was found, the value of the entry otherwise.
-    fn get<Q>(&self, key: &Q) -> Option<&V>
-    where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized;
-    /// @return None if the map is empty, otherwise the last added or updated entry.
-    fn get_last(&self) -> Option<&Entry<K, V>>;
-    /// @return None if the map is empty, otherwise the most recent 
-    fn get_first(&self) -> Option<&Entry<K, V>>;
-}
-
-
 impl<K, V> ProbeHashMapEntry<K, V> {
     pub fn new() -> Self {
         ProbeHashMapEntry { 
@@ -87,7 +63,6 @@ impl<K, V> ProbeHashMapEntry<K, V> {
         }
     }
 }
-
 
 impl<K, V, const Size: usize> ProbeHashMap<K, V, Size> {
     pub fn new() -> Self {
@@ -130,7 +105,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
     where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized {
         let hash = self.hash(key);
         let mut index = hash;
-        // Possible unoccupied entries from [hash, Size-1]
+        // Possible entries from [hash, Size-1]
         while index < Size {
             match &self.entry_array[index].storage {
                 &Storage::UnOccupied => return FindResult::UnOccupied(index),
@@ -144,7 +119,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
             index+=1;
         }
 
-        // Possible unoccupied entries from [0, hash - 1]
+        // Possible entries from [0, hash - 1]
         index = 0;
         while index < hash {
             match &self.entry_array[index].storage {
@@ -162,6 +137,8 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         return FindResult::None;
     }
 
+    /// Attempts to find an entry for given key
+    /// @return An index of the entry if found, None otherwise
     fn find_index_of<Q>(&self, key: &Q) -> Option<usize>
     where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized {
         let hash = self.hash(key);
@@ -192,6 +169,8 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         return None;
     }
 
+    /// Attempts to find an entry for given key and returns it as a reference
+    /// @return A borrow to the entry if found, None otherwise
     fn find_entry<Q>(&self, key: &Q,) -> Option<&Entry<K, V>>
     where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized {
         let hash = self.hash(key);
@@ -222,6 +201,8 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         return None;
     }
 
+    /// Removes the linking of an entry at given index. Fixes the linked
+    /// list of entries to ensure continuity.
     fn unlink(&mut self, index: usize) {
         // Cloning linkage as to avoid two mut references from existing at the same time
         let previous = self.entry_array[index].linkage.previous.clone();
@@ -245,6 +226,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         self.entry_array[index].linkage.next = None;
     }
 
+    /// Links the entry at given index to be the new last entry.
     fn link_as_last(&mut self, index: usize) {
         if let Some(previous_last_index) = self.last_index {
             self.entry_array[index].linkage.previous = Some(previous_last_index);
@@ -253,11 +235,13 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         else {
             self.entry_array[index].linkage.previous = None;
         }
-        self.entry_array[index].linkage.next = None;
+        // next element is None by default. We don't need to set it here
+        //self.entry_array[index].linkage.next = None;
 
         self.last_index = Some(index);
     }
 
+    /// Overwrites an entry at given index.
     fn insert_at_index(&mut self, index: usize, key: K, value: V) {
         self.entry_array[index].storage = Storage::Occupied(Entry{key, value});
         if self.first_index.is_none() {
@@ -266,6 +250,8 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         self.link_as_last(index);
     }
 
+    /// Updates the value of an entry at given index and updates the linking
+    /// to make it the new last entry.
     fn update_at_index(&mut self, index: usize, value: V) {
         if let &mut Storage::Occupied(ref mut entry) = &mut self.entry_array[index].storage {
             entry.value = value;
@@ -274,14 +260,17 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         self.link_as_last(index);
     }
 
+    /// Removes an entry at given index and removes its linking.
     fn remove_at_index(&mut self, index: usize) {
         self.unlink(index);
         self.entry_array[index].storage = Storage::OccupiedDeleted;
     }
 
-    //}
-//impl<K: std::hash::Hash, V, const Size: usize> ProbeHashMapTrait<K, V> for ProbeHashMap<K, V, Size> {
+    // Having defined helper functions, we define our publicly available ones:
 
+    /// Updates a currently existing value with key equal to given key, or
+    /// alternatively creates a new entry if not yet existing.
+    /// @return Ok(()) if insertion or update was successful, Err(InsertionError) otherwise
     pub fn insert(&mut self, key: K, value: V) -> Result<(), InsertionError> {
         // Find unoccupied index starting at hash value
         match self.find_entry_or_unoccupied(&key) {
@@ -293,6 +282,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         return Ok(());
     }
 
+    /// Removes an entry with key equal to given key
     pub fn remove<Q>(&mut self, key: &Q)
     where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized {
         match self.find_index_of(key) {
@@ -301,6 +291,8 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         };
     }
     
+    /// Returns the value of the entry with key equal to given key.
+    /// @return None if no such entry was found, the value of the entry otherwise.
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where K: std::borrow::Borrow<Q>, Q: std::hash::Hash + Eq + ?Sized {
         match self.find_entry(key) {
@@ -311,6 +303,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         };
     }
     
+    /// @return None if the map is empty, otherwise the last added or updated entry.
     pub fn get_last(&self) -> Option<&Entry<K, V>> {
         let index = match &self.last_index {
             &None => return None,
@@ -332,6 +325,7 @@ impl<K: std::hash::Hash + Eq, V, const Size: usize> ProbeHashMap<K, V, Size> {
         return Some(entry);
     }
     
+    /// @return None if the map is empty, otherwise the most recent 
     pub fn get_first(&self) -> Option<&Entry<K, V>> {
         let index = match &self.first_index {
             &None => return None,

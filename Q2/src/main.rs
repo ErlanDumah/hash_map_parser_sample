@@ -56,15 +56,12 @@ fn main() {
     //println!("Successfully wrote the response into {}", file_path);
     //return;
 
-    // Initially trying to just output the whole response as text here crashed my CLI.
     // Message byte count: 491542
     println!("Message byte count: {}", body_text.len());
 
-    // The data is, as expected huge
     let mut parser = Parser::new(&body_text);
 
     let start = Instant::now();
-
     // Test parsing a single entry.
     let single_entry = match parser.parse_single() {
         Err(error) => {
@@ -73,7 +70,6 @@ fn main() {
         },
         Ok(entry) => entry,
     };
-
     let duration = start.elapsed();
 
     // Parsing a single entry took 91.8µs (that's in debug though)

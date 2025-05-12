@@ -31,4 +31,4 @@ Functions `get_first`, `get_last` are both a lookup of an array entry per index,
 
 ### Test cases
 
-The test cases used are meant as ensurance that the functions implemented fulfill the requirements given, and as an easy way of debugging the code. In particular use cases where the first and last entry are manipulated, as well as cases where 
+The test cases used are meant as ensurance that the functions implemented fulfill the requirements given, and as an easy way of debugging the code. In particular use cases where the first and last entry are manipulated were important to ensure correctness of the code.
