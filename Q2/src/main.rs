@@ -97,6 +97,8 @@ fn main() {
 
     // Parsing 100 further entries took 2.1233ms (that's in debug though)
     println!("Parsing 100 further entries took {:?}", duration);
+
+    // Find benchmarking code in Q2/benches/bench_parser.rs
 }
 
 

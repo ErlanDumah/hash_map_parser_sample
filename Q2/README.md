@@ -34,8 +34,9 @@ The parser does not use any abstract language trees, rather a direct scan of the
 A few optimization opportunities come to mind:
 
  - Profiling of code with tools: This will let us break down which part of the code takes the most execution time, indicating where our bottlenecks are and what to work on.
+ - Cache locality for data received: The access to data as of now is not optimized at all. We could try and load chunks of the data into the cache at a time to try and speed up the scan of the data.
+ - Try and refactor the code to accept a byte array rather than a `String` and measure possible speedup: it could conceivably be that the algorithm can be sped up by directly accepting byte arrays rather than a `char` iterator.
  - Break down the one big request into smaller ones: Currently we are just requesting all available data instead of specifying the request for the respective use case.
- - Try and refactor the code to accept a byte array rather than a `String` and measure possible speedup: it could conceivably be that the algorithm can be sped up by directly accepting byte arrays rather than a `String` iterator.
 
 
 ### Other thoughts

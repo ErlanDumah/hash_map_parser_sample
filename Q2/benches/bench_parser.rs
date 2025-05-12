@@ -9,7 +9,7 @@ fn parse_single_once(data: &String) {
 
     match parser.parse_single() {
         Err(error) => {
-            assert!(false, "Error parsing 100 entries: {}", error);
+            assert!(false, "Error parsing single entry: {}", error);
         },
         Ok(_) => {},
     }
@@ -57,15 +57,15 @@ fn parser_benchmark(criterion: &mut Criterion) {
     };
 
     criterion.bench_function("single parse_single() calls", |bencher| {
-        bencher.iter(|| parse_single_once(&file));
+        bencher.iter(|| parse_single_once(black_box(&file)));
     });
 
     criterion.bench_function("100 parse_single() calls", |bencher| {
-        bencher.iter(|| parse_single_100_times(&file));
+        bencher.iter(|| parse_single_100_times(black_box(&file)));
     });
 
     criterion.bench_function("parsing entire data", |bencher| {
-        bencher.iter(|| parse_entire_data(&file));
+        bencher.iter(|| parse_entire_data(black_box(&file)));
     });
 }
 

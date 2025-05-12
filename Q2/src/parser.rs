@@ -94,12 +94,12 @@ impl Display for ParseError {
 // An enum to represent the lexical tokens we are looking for in the data:
 #[derive(Debug)]
 enum Token {
-    ArrayStart, // '[' marking the beginning of JSON data array
-    ArrayEnd, // ']'
-    ObjectStart, // '{'
-    ObjectEnd, // '}'
-    StringValue(String), // "sometext"
-    NumberValue(usize), // 1353426
+    ArrayStart, // '[' marking the beginning of a JSON data array
+    ArrayEnd, // ']' marking the end of a JSON data array
+    ObjectStart, // '{' marking the beginning of a JSON data object
+    ObjectEnd, // '}' marking the end of a JSON data object
+    StringValue(String), // "sometext", the data containing all characters within the '"' span
+    NumberValue(usize), // 1353426, data not marked with a '"' but restricted to a series of digits
     //KeyIdentifier // ':', can be ignored
     //DataSeparator // ',', can be ignored
 }
@@ -119,7 +119,7 @@ enum State {
     Object,
 
     // [{"key": "value"}]
-    //   ^    ^^       ^
+    //        ^^       ^
     Key(String),
 }
 
@@ -146,7 +146,7 @@ impl<'data> Parser<'data> {
     }
 
     /// Consumes the next token from our current data stream
-    /// @return A token if there is data left, None otherwise
+    /// @return A token if the next token could be parsed successfully, an error otherwise (including end of data)
     fn consume_token(&mut self) -> Result<Token, ParseTokenError> {
         while let Some(character) = self.char_iterator.next() {
             match character {
@@ -324,7 +324,7 @@ impl<'data> Parser<'data> {
     }
 
     /// Parses until the first ResultEntry was found
-    /// @return ResultEntry if there is data left, None otherwise
+    /// @return ResultEntry if there is data left, an error otherwise (including end of data)
     pub fn parse_single(&mut self) -> Result<ResultEntry, ParseError> {
         loop {
             let token = match self.consume_token() {

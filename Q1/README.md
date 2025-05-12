@@ -1,7 +1,5 @@
 # sample_Q1
 
-Most assumptions and implementation details are described in src/main.rs.
-
 ## Assumptions and Things unsure
 
 ### Fixed size hashmap
